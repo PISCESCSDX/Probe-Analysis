@@ -1,0 +1,13 @@
+The first m-files "ckeckken" and "loadken" were written by Albrecht Stark. The evaluation has to be done manually in the shell. Then you can look at the results with checkken. "checkken" uses "loadken" to load the evaluated characteristics.
+checkken.m
+loadken.m
+
+kenfit.m
+========
+The most general evaluation file.
+
+
+allkenfit.m    evaluates with fixed parameters, which can be changed only in this m-file
+autokenfit.m
+kenprofiles.m
+loadprofiles.m
