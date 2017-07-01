@@ -1,0 +1,11 @@
+Oct-17-2013 09:48, Christian Brandt, San Diego
+
+The m-files in the current folder are used to decompose camera images of the azimuthal cross-section of a plasma column into azimuthal eigenmodes.
+
+The main procedure to start with is CalcFFTDec.m (before it was mkfftdec.m).
+
+It uses the camera average procedure fct_a_moviestatistic.m
+
+
+(Step 1) CalcFFTDec: adapt parameters and run it
+(Step 2) look into phasedata.mat to study phase coupling

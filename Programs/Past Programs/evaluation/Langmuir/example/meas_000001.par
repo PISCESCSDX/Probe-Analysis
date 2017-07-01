@@ -1,0 +1,7 @@
+% !!! chfit parameter output file - do not edit !!!
+% Output format:
+% First row: initial plasma parameters, Second row: plasma parameters as determined by the fit.
+% Columns: (PPOT = plasma potential, FPOT = floating potential, ni = electron density, Ti = electron temperature)
+% PPOT [V]        n1 [m^3]        T1 [eV]         n2 [m^3]        T2 [eV]         FPOT [V]       
+  12.03           2.32839e+17     3.2932511       0               0               4.812          
+  13.984304       1.0866949e+18   1.3978531       0               0               4.812          

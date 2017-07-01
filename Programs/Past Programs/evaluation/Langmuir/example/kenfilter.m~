@@ -1,0 +1,11 @@
+a=load('meas_000010.dat');
+ken = a(:,2);
+
+Wp=[0.2 0.3];
+Ws=[0];
+Rp=;
+Rs=;
+
+[N,Wn] = BUTTORD(Wp, Ws, Rp, Rs);
+[B,A] = butter(N,Wn,'stop');
+y=filter(B,A,ken);

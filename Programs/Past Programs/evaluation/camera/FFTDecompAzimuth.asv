@@ -1,0 +1,276 @@
+function FFTDecompAzimuth(inp)
+%==========================================================================
+%function FFTDecompAzimuth(inp)
+%--------------------------------------------------------------------------
+% Read the images, extract the azimuthal signals for a set of radii and
+% calculate the inverse Fourier transformation to decompose the mode 
+% numbers 1, 2, and 3
+%
+% (C) 07.05.2013, C. Brandt, San Diego
+% - use ffteigenmode.m for better FFT decomposition
+%---------- Normalization Info --------------------------------------------
+% (1) The average fluctuation amplitude is calculated (-> mksum.m).
+% 'lightfluc.amp' (in camera intensity units (CIU)).
+% here: averaged: AvgAmpLfluc
+% 
+% (2) From that the average energy in the 2D azimuthal fluctuations is 
+% calculated: 
+% here: AvgEnLflucArea
+%
+% (3) NEW: The pictures from the cine files are loaded and the average is
+%     subtracted.
+%
+% (4) Shift is substracted -> pure fluctuation data in Camera Intensity
+%     units (CIU).
+%
+% (5) FFT decomposition and reconstruction.
+%
+% (6) Normalization of the 2D reconstruction result to 'AvgAmpLfluc'.
+%
+% (7) Radial mode energies are calculated by A^2
+%     Normalizeation by: ***
+%------------------------------------------------------------INPUT & OUTPUT
+% inp.dir: directory of average removed image files
+% inp.centerpixels: definition of the radial position r=0, [pixx pixy]
+% inp.px2r: conversion factor from pixel to millimeter
+% inp.r: radial pixel array: [r1 r2 dr]
+% inp.m: mode vector (modes to decompose)
+%------------------------------------------------------------------EXAMPLES
+% inp.dir = '/home/data/rawdata/20120830_CSDX/b1/';
+% inp.centerpixels = [50 48];
+% inp.px2r = 1.50;
+% inp.r = [1 45 1];
+% % OLD inp.r = [1 47 1];
+% inp.m = 0:5;
+% FFTDecompAzimuth(inp)
+%==========================================================================
+
+% sample frequency
+load([bd 'info.mat']);
+fs = info.frameRate;
+
+%==========================================================================
+% # INPUT
+%==========================================================================
+ilim = inp.st:1:info.NumFrames;
+% number of azimuthal "pixel probes"
+num = inp.resphi;
+% center pixel
+%    test the center pixel:
+%    fn = 'a*.tif'; cp = [48 48]; r = 10; np = 64;
+%    centerpixeltest(fn, cp, r, np)
+cp = inp.centerpixels;
+% Calculate from pixel to radial units (mm)
+px2r = inp.px2r;
+% Define radial vector
+rmin = inp.r(1);
+rmax = inp.r(2);
+dr   = inp.r(3);
+rvec = rmin:dr:rmax;
+% mode vector
+mvec = inp.m; i_am = mvec+1;
+
+% Initialize variables
+ctr = 0;
+
+%==========================================================================
+% Define amplitude- and color-limits for radial (light) profiles
+load([bd 'mksum.mat']);
+% Average amplitudes of measured light fluctuations (Use std and not pk-pk)
+% (cam-intensity units: CIU)
+AvgAmpLfluc = mean(sm.std);
+% Average Energy in whole azimuthal area (in CIU*pixel^2)
+% Use same definition as for the calculation of the energies!
+AvgEnLflucArea = (AvgAmpLfluc/sqrt(2) * (2*pi*rvec*px2r) ).^2 ;
+% Average maximal amplitudes
+AvgMaxLfluc = mean( (sm.max-sm.min)/2 );
+%--------------------------------------------------------------------------
+
+%==========================================================================
+% Temporal for-loop ('ilim' images)
+%==========================================================================
+En_m(length(rvec)) = 0;
+En_cam(length(rvec)) = 0;
+invm{length(mvec)} = zeros(length(mvec),num);
+En_mr{length(mvec)} = zeros(1,length(rvec));
+for i=ilim
+  ctr = ctr+1;
+  disp(num2str(ctr))
+    
+  %------------------------------------------
+  % READ MEASUREMENT IMAGE
+  fname = [basedir a(i).name];
+  % read image (-shift to obtain the light fluctuations around zero)
+  %
+  % 09.08.2012: do not remove the average to obtain a non-zero zonal flow
+  % OLD pic = double(imread(fname)) - shift;
+  pic = double(imread(fname));
+  %------------------------------------------  
+  
+  % Preallocation
+  c_r = 0;
+  X = zeros(num,numel(rvec));
+  Y = zeros(num,numel(rvec));
+  for r=rvec
+    c_r = c_r+1;
+    % extract artificial probe array, transpose for FFT
+    [phi, Avec, piccou] = camextractcou(pic, r, num, cp);
+    Avec = Avec';  phi = phi';
+    % Calculate Fourier transformation (phi/2 to obtain integer m)
+    [m amp pha] = ffteigenmode(phi/2, Avec, 10);
+
+    % Store Phase and amplitude data in variable 'mode'
+    %--------------------------------------------------
+    %if r==20
+    %  clf; subplot(2,1,1); stem(pha/pi); subplot(2,1,2); plot(Avec)
+    %  input(' waiting ');
+    %end
+    phase.amp{c_r}(i,:) = amp;
+    phase.pha{c_r}(i,:) = pha;
+    
+    % Calculate Inverse Fourier transformation for each mode in mvec
+    for im = 1:length(mvec)
+      j=i_am(im);
+      invm{im}(c_r,:) = amp(j)*cos(pi*mvec(im)*phi+pha(j));
+    end
+    
+    % Calculate radial light profiles
+    Esum = 0;
+    for im = 1:length(mvec)
+      j=i_am(im);
+      % En_mr: radial dependent mode energy (unit: (amp*length)^2 )
+      En_mr{im}(c_r)  = ( (amp(j)/sqrt(2)) *2*pi*(r*px2r) )^2;
+      Esum = Esum + En_mr{im}(c_r);
+    end
+    % Energy reconstructed from mode = mvec
+    En_m(c_r) = Esum;
+    % Energy in camera measurement (all FFT-modes: m=1-32)
+    En_cam(c_r) = sum( ((amp/sqrt(2)) * 2*pi*(r*px2r)).^2 );
+
+    % return to xy coordinates and plot with pcolor
+    X(:,c_r) = r*px2r*cos(phi'*pi);
+    Y(:,c_r) = r*px2r*sin(phi'*pi);
+    
+%     X = [X r*px2r*cos(phi'*pi)];
+%     Y = [Y r*px2r*sin(phi'*pi)];
+  end
+
+
+
+%==========================================================================
+% Calculate plots
+%==========================================================================
+
+%hold on; plot(rvec, En_cam, 'b');  plot(rvec, En_cam1, 'r');
+
+%==========================================================================
+% MODE PLOTS
+%==========================================================================
+% calculate minum distance to the pixel picture margin
+  sznx = size(pic,1); szny = size(pic,2);
+  mindist = min([cp(1)-1 sznx-cp(1) cp(2)-1 szny-cp(2)]);
+pic = pic(cp(1)-mindist:cp(1)+mindist, cp(2)-mindist:cp(2)+mindist);
+% Calculate position vectors for the picture
+nX = px2r*((1:size(pic,1))-1-size(pic,1)/2);
+nY = px2r*((1:size(pic,2))-1-size(pic,2)/2);
+
+mode.cam.x = nX'/10;
+mode.cam.y = nY'/10;
+mode.cam.pic = pic/AvgMaxLfluc;
+
+mode.fs  = fs;
+mode.i_t = ctr;
+
+
+% Sum up for superimposed plot
+te = invm{1}'; 
+for g=2:mvec(end)
+  te = te + invm{g}';
+end
+% PLOT mode decomposed plots
+for im=1:length(mvec)+1
+  x_show = Y/10; x_show(size(Y,1)+1,:) = x_show(1,:);
+  y_show = X/10; y_show(size(X,1)+1,:) = y_show(1,:);
+  if im<length(mvec)+1
+    M_show = invm{im}'/AvgMaxLfluc; M_show(size(M_show,1)+1,:)=M_show(1,:);
+  else
+    M_show = te/AvgMaxLfluc; M_show(size(M_show,1)+1,:)=M_show(1,:);
+  end
+  %------------------------------------------------------------------------
+  % INFO for the variable 'mode':
+  %     M_show is normalized to AvgMaxLfluc, i.e., to the average maximum
+  %     light fluctuation amplitudes.
+  %     This has nothing to with the degree of fluctuation (%)!
+  %     For obtaining information about that, look at mksum.mat
+  %     'sm.amp'
+  mode.m{im}.x = x_show;
+  mode.m{im}.y = y_show;
+  mode.m{im}.pic = M_show;
+  mode.mvec = mvec;
+  %------------------------------------------------------------------------
+  
+  %==========================================================================
+  % RADIAL LIGHT INTENSITY PROFILES
+  %==========================================================================
+  radprof.r      = rvec*px2r/10;
+  radprof.En_m   = En_m./AvgEnLflucArea;
+  radprof.En_cam = En_cam./AvgEnLflucArea;
+
+%   figure
+%   hold on
+%   plot(radprof.r, radprof.En_m,   'b')
+%   plot(radprof.r, radprof.En_cam, 'r')
+%   hold off
+% 
+%   return
+  
+  if im<length(mode.mvec)+1
+    radprof.En_mr{im} = En_mr{im}./AvgEnLflucArea;
+    tt.en{im}(i) = sum(radprof.En_mr{im});
+  end
+
+end
+
+fn = mkstring('fftdec/mkfftdec_', '0', i, info.NumFrames, '.mat');
+save(fn, 'mode', 'radprof');
+
+end % i: ilim
+
+
+% Save Energy, Amplitude Variables
+%==========================================================================
+tt.tvec = 1/info.frameRate * ((1:la)'-1);
+save('modeenergy.mat','tt')
+
+
+% Save Phase Data Variables
+%==========================================================================
+% Phase difference between mi and mj
+c_r = 0;
+for r=rvec
+c_r = c_r+1;
+ph.phd12{c_r}=(unwrap(phase.pha{c_r}(:,2))-unwrap(phase.pha{c_r}(:,3)))/(2*pi);
+ph.phd13{c_r}=(unwrap(phase.pha{c_r}(:,2))-unwrap(phase.pha{c_r}(:,4)))/(2*pi);
+ph.phd14{c_r}=(unwrap(phase.pha{c_r}(:,2))-unwrap(phase.pha{c_r}(:,5)))/(2*pi);
+ph.phd15{c_r}=(unwrap(phase.pha{c_r}(:,2))-unwrap(phase.pha{c_r}(:,6)))/(2*pi);
+ph.phd16{c_r}=(unwrap(phase.pha{c_r}(:,2))-unwrap(phase.pha{c_r}(:,7)))/(2*pi);
+ph.phd23{c_r}=(unwrap(phase.pha{c_r}(:,3))-unwrap(phase.pha{c_r}(:,4)))/(2*pi);
+ph.phd24{c_r}=(unwrap(phase.pha{c_r}(:,3))-unwrap(phase.pha{c_r}(:,5)))/(2*pi);
+ph.phd25{c_r}=(unwrap(phase.pha{c_r}(:,3))-unwrap(phase.pha{c_r}(:,6)))/(2*pi);
+ph.phd26{c_r}=(unwrap(phase.pha{c_r}(:,3))-unwrap(phase.pha{c_r}(:,7)))/(2*pi);
+ph.phd34{c_r}=(unwrap(phase.pha{c_r}(:,4))-unwrap(phase.pha{c_r}(:,5)))/(2*pi);
+ph.phd35{c_r}=(unwrap(phase.pha{c_r}(:,4))-unwrap(phase.pha{c_r}(:,6)))/(2*pi);
+ph.phd36{c_r}=(unwrap(phase.pha{c_r}(:,4))-unwrap(phase.pha{c_r}(:,7)))/(2*pi);
+ph.phd45{c_r}=(unwrap(phase.pha{c_r}(:,5))-unwrap(phase.pha{c_r}(:,6)))/(2*pi);
+ph.phd46{c_r}=(unwrap(phase.pha{c_r}(:,5))-unwrap(phase.pha{c_r}(:,7)))/(2*pi);
+ph.phd56{c_r}=(unwrap(phase.pha{c_r}(:,6))-unwrap(phase.pha{c_r}(:,7)))/(2*pi);
+end
+ph.tvec = (ilim-ilim(1))/fs*1e3;
+ph.rvec = rvec;
+save('phasedata.mat','phase','ph');
+
+% % save variables
+% mode.info = 'cam: camera pictures, m: mode data (mvec)';
+% radprof.info = 'r in cm, En_m: inverse fft (mvec), En_mr: radial mode energy, En_cam: camera pic energy';
+% save('mkfftdec.mat','mode', 'radprof','ilim');
+end
