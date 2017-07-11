@@ -4,9 +4,8 @@ function langmuirToText(filebase,zeroFileBase)
 
 %Eliminates noise. File name is subject to change.
 
-[V1,I1]= formatAndAverageLangmuirData(filebase);
-[V0,I0]= formatAndAverageLangmuirData(zeroFileBase);
-V=V1-V0;
+[V,I1]= formatAndAverageLangmuirData(filebase);
+[~,I0]= formatAndAverageLangmuirData(zeroFileBase);
 I=I1-I0;
 
 for i=1:length(V(1,:))
