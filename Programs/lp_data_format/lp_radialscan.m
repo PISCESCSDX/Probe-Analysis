@@ -61,7 +61,7 @@
 
 %defualt responses to user prompts
 datafilename = '(path, if necesarry)/filename.h5'; %'(path, if necesarry)/filename.h5'
-errorfilename = '(path, if necesarry)/filename.h5';  %'(path, if necesarry)/filename.h5'
+errorfilename = 'B0_24914_port1.h5';  %'(path, if necesarry)/filename.h5'
 %a file path is necessary if the file is not in the current MATLAB folder
 sweepsperintervalSTR = '10';
 minmaxindexstepSTR = '2000';
@@ -153,6 +153,23 @@ for i = 1:b
 A = Vin(:,i);
 i1 = find(A, 1, 'last');
 Vwrite{i} = A(1:i1);
+
+end
+
+mkdir(datafilename);
+
+[a b] = size(Vwrite);
+
+for i = 1:b
+
+filestrIN = sprintf('V%.fin.txt', i);
+filestrOUT = sprintf('V%.fout.txt', i);
+
+dlmwrite(filestrIN, Vwrite{i});
+dlmwrite(filestrOUT, Iwrite{i});
+
+movefile(filestrIN,datafilename);
+movefile(filestrOUT,datafilename);
 
 end
 
