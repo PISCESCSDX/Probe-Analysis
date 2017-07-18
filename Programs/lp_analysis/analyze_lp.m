@@ -176,7 +176,7 @@ Res      = str2double(pAns(9));
 l_t      = str2double(pAns(10));
 d_t      = str2double(pAns(11));
 
-%% ------------------------------------------------------
+%% --------------------------------------------------------
 % get the files for analysis and put them in arrays
 
 if exist('rFit','var')
