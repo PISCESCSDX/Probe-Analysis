@@ -6,6 +6,8 @@
 %Output files designed for Igor (CSDX program) probe anaylsis on PISCES lab
 %computer. (Shota's code) and MATLAB analyze_lp function (Mike's code).
 
+mkdir(datafilename);
+
 [a b] = size(Vwrite);
 
 for i = 1:b
@@ -15,6 +17,8 @@ filestrOUT = sprintf('V%.fout.txt', i);
 
 dlmwrite(filestrIN, Vwrite{i});
 dlmwrite(filestrOUT, Iwrite{i});
+movefile(filestrIN,datafilename);
+movefile(filestrOUT,datafilename);
 
 end
 
