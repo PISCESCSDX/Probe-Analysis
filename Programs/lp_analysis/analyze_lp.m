@@ -752,7 +752,7 @@ iMax = fitV.i2b;
 xMin = fitV.Vmin;
 xMax = fitV.V_f;
 yMin = 0;
-yMax = mean(IP(1:100))^2*1e6;
+yMax = max(IP(1:500).^2))*1e6;
 
 p   = polyfit(VP(iMin:iMax),IA(iMin:iMax).^2,1);
 nF  = VP*p(1)+p(2);
