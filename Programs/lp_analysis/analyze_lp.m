@@ -22,6 +22,9 @@ function [pAns,pFit,rFit]=analyze_lp(savedAns,savedFit,rFit)
 %               The high end of the fit plot sometimes gets cut up, this
 %               change will typically raise the Ymax value
 %
+%% Edited 7/18/2017 for CSXD (NJ) 
+%   - Users save three estimates for V_s and T_e which are used to generate a margin of error
+%
 %% analyze_lp Summary     2015_07_07
 %       Perform simple linear fits to langmuir probe
 %       data. Several prompts need to be filled out
