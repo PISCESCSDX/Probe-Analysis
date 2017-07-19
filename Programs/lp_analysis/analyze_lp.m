@@ -396,6 +396,9 @@ end
 
 %% ------------------------------------------------------
 % begin fit for T_e and E_sat
+i=1;
+V_s=zeros(3,1);
+T_e=zeros(3,1);
 LI_p = -abs(log(I_p-I_sat));
 LI_a = -abs(log(I_a-I_sat));
 
@@ -414,7 +417,7 @@ figure(1)
 clf
 grid on
 set(gca,'XMinorTick','on')
-[V_s,T_e] = plotFitTE(V_p,LI_p,LI_a,pFit);
+[V_s(3,1),T_e(3,1)] = plotFitTE(V_p,LI_p,LI_a,pFit);
 
 
 choice = prompt_0;
@@ -439,12 +442,25 @@ while choice == 1
  clf
  set(gca,'XMinorTick','on')
  grid on
- [V_s,T_e] = plotFitTE(V_p,LI_p,LI_a,pFit);
+ [V_s(i),T_e(i)] = plotFitTE(V_p,LI_p,LI_a,pFit);
  
- 
- choice = menu('Continue if plot is reasonable or change',...
+    if(i<3)
+    choice = menu('Continue if plot is reasonable, change, or save an approximately reasonable value to generate a margin of error',...
+               'change',...          % results in choice = 1;
+               'save');              %results in choice = 2;
+        if(choice==2)
+            [V_s(i),T_e(i)] = plotFitTE(V_p,LI_p,LI_a,pFit);
+            choice =1;
+            i=i+1;
+        end
+    else       
+        choice = menu('Continue if plot is reasonable, change, or save an approximately reasonable value to generate a margin of error',...
                'change',...          % results in choice = 1
-               'continue');          % results in choice = 2
+               'continue');         % results in choice = 2   
+    end
+    if(choice==2)
+        [V_s(i),T_e(i)] = plotFitTE(V_p,LI_p,LI_a,pFit);
+    end
 end
 
 %% ------------------------------------------------------
@@ -456,7 +472,7 @@ A_p = pi*(d_t/2)^2 + pi*d_t*l_t;  % [m^2]
 % Ion flux and n_e
 phi = I_sat/-q_e/A_p;             % [ions/m^2/s]
 m_i = amu*m_n;                    % [kg] (Atomic mass)
-n_e = phi/sqrt(q_e*T_e/m_i);      % [m^-3] (plasma density n_0) 
+n_e = phi/sqrt(q_e*T_e(3,1)/m_i);      % [m^-3] (plasma density n_0) 
 % exp(-Z/2)/sqrt(e*Z*T_e/m_i);    % [m^-3]
 
 % Ion energy
@@ -533,7 +549,7 @@ phiInfo = '\phi_{ion} [m^{-2} s^{-1}] = ';
 hrz1 = 0.68;
 hrz2 = 0.86;
 hght = 0.47;
-delh = 0.045; 
+delh = 0.1;%0.045; 
 
 text(hrz1,hght-delh*0,     'species [Z] = ','HorizontalAlignment','right');
 text(hrz1,hght-delh*1, 'atomic mass [u] = ','HorizontalAlignment','right');
@@ -560,18 +576,18 @@ text(hrz1,hght-delh*5, num2str(   pressure));
 text(hrz1,hght-delh*6, num2str(       bias));
 
 text(hrz2,hght-delh*0, num2str(   V_f,4));
-text(hrz2,hght-delh*1, num2str(   V_s,4));
-text(hrz2,hght-delh*2, num2str(   T_e,4));
+text(hrz2,hght-delh*1, [num2str(   V_s(3,1),4) ' +/- ' num2str(std(V_s),4)]);
+text(hrz2,hght-delh*2, [num2str(   T_e(3,1),4) ' +/- ' num2str(std(T_e),4)] );
 text(hrz2,hght-delh*3, num2str(   n_e,4));
 text(hrz2,hght-delh*4, num2str( n_ion,4));
 text(hrz2,hght-delh*5, num2str( E_ion,4));
 text(hrz2,hght-delh*6, num2str(   phi,4));
 
 % location of files used 
-text(.60,.120,  'V_p path: ','HorizontalAlignment','right');
-text(.60,.075, ' I_p path: ','HorizontalAlignment','right');
-text(.60,.125,  parsed_vin ,'interpreter','none');
-text(.60,.080,  parsed_vout,'interpreter','none');
+% text(.60,.120,  'V_p path: ','HorizontalAlignment','right');
+% text(.60,.075, ' I_p path: ','HorizontalAlignment','right');
+% text(.60,.125,  parsed_vin ,'interpreter','none');
+% text(.60,.080,  parsed_vout,'interpreter','none');
 
 axes(ah);
 
