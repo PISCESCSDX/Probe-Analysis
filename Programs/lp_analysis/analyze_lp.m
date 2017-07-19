@@ -1,4 +1,10 @@
 function [pAns,pFit,rFit]=analyze_lp(savedAns,savedFit,rFit)
+%% Further edits for CSDX as of 2017_07_19
+%           -changed plotFitN_i subfunction yMax limit code from: 
+%               yMax = mean(IP(1:200))^2*1e6; to yMax = max(IP(1:500).^2)*1e6;
+%               The high end of the fit plot sometimes gets cut off, this
+%               change will raise the Ymax value
+%
 %% Edited 2017_07_17 for CSDX
 %       Edited program to use for CSDX probe analysis. 
 %           -Changed current variable calculation (when dividing by 
@@ -17,10 +23,6 @@ function [pAns,pFit,rFit]=analyze_lp(savedAns,savedFit,rFit)
 %               limits problem that sometimes arises on 2nd graph. Limits
 %               appear to get messed up if the initial Isat fit has a negative
 %               fit
-%           -changed plotFitN_i subfunction yMax limit code from: 
-%               yMax = mean(IP(1:200))^2*1e6; to yMax = mean(IP(1:100))^2*1e6;
-%               The high end of the fit plot sometimes gets cut up, this
-%               change will typically raise the Ymax value
 %
 %% Edited 7/18/2017 for CSXD (NJ) 
 %   - Users save three estimates for V_s and T_e which are used to generate a margin of error
@@ -752,7 +754,7 @@ iMax = fitV.i2b;
 xMin = fitV.Vmin;
 xMax = fitV.V_f;
 yMin = 0;
-yMax = max(IP(1:500).^2))*1e6;
+yMax = max(IP(1:500).^2)*1e6;
 
 p   = polyfit(VP(iMin:iMax),IA(iMin:iMax).^2,1);
 nF  = VP*p(1)+p(2);
