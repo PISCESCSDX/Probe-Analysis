@@ -139,9 +139,9 @@ ErrinloopFIXED = double(Errinloop(1:i1));
 i2 = find(Vout(:,i),1,'last');
 
 %VoutAdjusted{i} = Vout(1:i2,i) - Errfit(Vin(1:i2,i));
-VoutAdjusted{i}=zeros(1,i2);
+VoutAdjusted{i}=zeros(i2,1);
 for j=1:i2
-VoutAdjusted{i}(j) = Vout(j,i) - (m*(Vin(j,i))+b);
+VoutAdjusted{i}(j,1) = Vout(j,i) - (m*(Vin(j,i))+b);
 end
 end
 
@@ -181,5 +181,4 @@ end
 %data)....remember Iwrite can represent either the output voltage across
 %the resister or the current if that calculation has already been made.
 %This program will not make that calculation
-
 
